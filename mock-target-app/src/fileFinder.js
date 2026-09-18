@@ -1,12 +1,8 @@
-const glob = require('glob');
+const { globSync } = require('glob');
 
 function findFiles(pattern) {
-  return new Promise((resolve, reject) => {
-    glob(pattern, (err, files) => {
-      if (err) reject(err);
-      else resolve(files);
-    });
-  });
+  return globSync(pattern);
 }
 
 module.exports = { findFiles };
+
