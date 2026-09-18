@@ -47,7 +47,7 @@ export class RemediationLLMClient {
     if ((forcedProvider === 'gemini' || forcedProvider === 'google') && hasGemini) {
       this.provider = 'gemini';
       this.geminiClient = new GoogleGenAI({ apiKey: geminiKey });
-      this.model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+      this.model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     } else if (forcedProvider === 'openai' && hasOpenAI) {
       this.provider = 'openai';
       this.openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -62,7 +62,7 @@ export class RemediationLLMClient {
       // Free Tier Default if Gemini API key is provided
       this.provider = 'gemini';
       this.geminiClient = new GoogleGenAI({ apiKey: geminiKey });
-      this.model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+      this.model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     } else if (hasOpenAI) {
       this.provider = 'openai';
       this.openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

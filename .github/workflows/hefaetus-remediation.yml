@@ -3,7 +3,7 @@ name: 🔥 Hefaetus Autonomous Remediation
 on:
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
   schedule:
-    - cron: '0 2 * * 1' # Runs weekly on Monday at 02:00 UTC
+    - cron: "0 2 * * 1" # Runs weekly on Monday at 02:00 UTC
 
 permissions:
   contents: write
@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: agent/package-lock.json
 
       - name: 📦 Install Agent Dependencies
@@ -37,7 +37,7 @@ jobs:
           # Free Tier Google Gemini API Key configured in GitHub Repository Secrets
           LLM_PROVIDER: ${{ secrets.LLM_PROVIDER || 'gemini' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-3.6-flash' }}
 
           # Optional OpenAI / Anthropic Keys
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
