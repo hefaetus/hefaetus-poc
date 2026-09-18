@@ -47,7 +47,12 @@ fs.writeFileSync(
 const fileFinderCode = `const glob = require('glob');
 
 function findFiles(pattern) {
-  return glob.sync(pattern);
+  return new Promise((resolve, reject) => {
+    glob(pattern, (err, files) => {
+      if (err) reject(err);
+      else resolve(files);
+    });
+  });
 }
 
 module.exports = { findFiles };
@@ -63,7 +68,12 @@ fs.writeFileSync(
 const fileCleanerCode = `const rimraf = require('rimraf');
 
 function deletePath(targetPath) {
-  return rimraf.sync(targetPath);
+  return new Promise((resolve, reject) => {
+    rimraf(targetPath, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
 }
 
 module.exports = { deletePath };
