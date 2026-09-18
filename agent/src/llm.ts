@@ -166,46 +166,67 @@ Please analyze the failure and generate the patched file content.`;
 
     // 1. Google Gemini (Supports Free Tier with Google AI Studio)
     if (this.provider === 'gemini' && this.geminiClient) {
-      try {
-        const response = await this.geminiClient.models.generateContent({
-          model: this.model,
-          contents: userPrompt,
-          config: {
-            systemInstruction: systemPrompt,
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-          },
-        });
+      const candidateModels = [
+        this.model,
+        'gemini-2.5-flash',
+        'gemini-1.5-flash',
+        'gemini-3.6-flash',
+      ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
-        const rawContent = response.text || '{}';
+      for (const modelName of candidateModels) {
         try {
-          const parsed = JSON.parse(rawContent);
-          return {
-            patchedCode: this.extractCleanCode(parsed.patchedCode || ''),
-            explanation:
-              parsed.explanation ||
-              'Refactored import statement for upgraded dependency.',
-            breakingChangeAnalysis:
-              parsed.breakingChangeAnalysis ||
-              `Breaking change occurred in ${input.packageName} upgrade from ${input.oldVersion} to ${input.newVersion}.`,
-            rawResponse: rawContent,
-          };
-        } catch {
-          return {
-            patchedCode: this.extractCleanCode(rawContent),
-            explanation:
-              'Extracted refactored source directly from Gemini response.',
-            breakingChangeAnalysis: `API breaking change during ${input.packageName} upgrade.`,
-            rawResponse: rawContent,
-          };
+          const response = await this.geminiClient.models.generateContent({
+            model: modelName,
+            contents: userPrompt,
+            config: {
+              systemInstruction: systemPrompt,
+              responseMimeType: 'application/json',
+              temperature: 0.1,
+            },
+          });
+
+          const rawContent = response.text || '{}';
+          try {
+            const parsed = JSON.parse(rawContent);
+            return {
+              patchedCode: this.extractCleanCode(parsed.patchedCode || ''),
+              explanation:
+                parsed.explanation ||
+                'Refactored import statement for upgraded dependency.',
+              breakingChangeAnalysis:
+                parsed.breakingChangeAnalysis ||
+                `Breaking change occurred in ${input.packageName} upgrade from ${input.oldVersion} to ${input.newVersion}.`,
+              rawResponse: rawContent,
+            };
+          } catch {
+            return {
+              patchedCode: this.extractCleanCode(rawContent),
+              explanation:
+                'Extracted refactored source directly from Gemini response.',
+              breakingChangeAnalysis: `API breaking change during ${input.packageName} upgrade.`,
+              rawResponse: rawContent,
+            };
+          }
+        } catch (err: any) {
+          const isNotFound =
+            err?.status === 404 ||
+            (err?.message &&
+              (err.message.includes('NOT_FOUND') ||
+                err.message.includes('no longer available') ||
+                err.message.includes('404')));
+          if (isNotFound && modelName !== candidateModels[candidateModels.length - 1]) {
+            console.warn(
+              chalk.yellow(`[Gemini] Model ${modelName} returned 404. Auto-trying next candidate...`)
+            );
+            continue;
+          }
+          console.warn(
+            chalk.yellow(
+              `\n⚠️  [LLM Warning] Google Gemini API request failed (${err.message}). Falling back to Hefaetus deterministic engine for live demonstration.`
+            )
+          );
+          return this.getDeterministicPatch(input);
         }
-      } catch (err: any) {
-        console.warn(
-          chalk.yellow(
-            `\n⚠️  [LLM Warning] Google Gemini API request failed (${err.message}). Falling back to Hefaetus deterministic engine for live demonstration.`
-          )
-        );
-        return this.getDeterministicPatch(input);
       }
     }
 

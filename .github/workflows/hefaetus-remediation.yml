@@ -37,7 +37,7 @@ jobs:
           # Free Tier Google Gemini API Key configured in GitHub Repository Secrets
           LLM_PROVIDER: ${{ secrets.LLM_PROVIDER || 'gemini' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-2.0-flash' }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-2.5-flash' }}
 
           # Optional OpenAI / Anthropic Keys
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
