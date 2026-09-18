@@ -45,7 +45,7 @@ function printBanner() {
     chalk.cyan(`
   ╔═══════════════════════════════════════════════════════════════════════╗
   ║                                                                       ║
-  ║      🔥  H E F A E S T U S  ::  Autonomous Remediation Agent  🔥     ║
+  ║      🔥  H E F A E T U S  ::  Autonomous Remediation Agent  🔥       ║
   ║      Self-Healing DevSecOps Pipeline for Breaking Dependency Bumps   ║
   ║                                                                       ║
   ╚═══════════════════════════════════════════════════════════════════════╝
@@ -328,12 +328,12 @@ async function main() {
 
   console.log(
     chalk.green.bold(
-      '✨ Hefaestus successfully resolved breaking dependency upgrade autonomously!'
+      '✨ Hefaetus successfully resolved breaking dependency upgrade autonomously!'
     )
   );
 }
 
 main().catch((err) => {
-  console.error(chalk.red('\n[Unexpected Error in Hefaestus Pipeline]:'), err);
+  console.error(chalk.red('\n[Unexpected Error in Hefaetus Pipeline]:'), err);
   process.exit(1);
 });

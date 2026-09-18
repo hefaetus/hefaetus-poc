@@ -1,7 +1,7 @@
 services:
   # Isolated Node.js Sandbox Container for executing untrusted/tested code
   sandbox:
-    container_name: hefaestus-sandbox
+    container_name: hefaetus-sandbox
     image: node:20-alpine
     working_dir: /workspace
     volumes:
@@ -9,18 +9,18 @@ services:
     command: ["tail", "-f", "/dev/null"]
     restart: unless-stopped
     networks:
-      - hefaestus-net
+      - hefaetus-net
 
   # Orchestrator Agent Container
   agent:
-    container_name: hefaestus-agent
+    container_name: hefaetus-agent
     build:
       context: .
       dockerfile: agent/Dockerfile
     environment:
       - NODE_ENV=development
       - EXECUTION_MODE=docker
-      - SANDBOX_CONTAINER_NAME=hefaestus-sandbox
+      - SANDBOX_CONTAINER_NAME=hefaetus-sandbox
       - MOCK_TARGET_DIR=/workspace/mock-target-app
       - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -38,8 +38,8 @@ services:
     depends_on:
       - sandbox
     networks:
-      - hefaestus-net
+      - hefaetus-net
 
 networks:
-  hefaestus-net:
+  hefaetus-net:
     driver: bridge

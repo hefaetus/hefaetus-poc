@@ -1,5 +1,5 @@
 {
-  "name": "hefaestus-agent",
+  "name": "hefaetus-agent",
   "version": "1.0.0",
   "description": "Autonomous Dependency Remediation Agent",
   "main": "dist/index.js",

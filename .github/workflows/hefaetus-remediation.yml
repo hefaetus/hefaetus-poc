@@ -1,4 +1,4 @@
-name: 🔥 Hefaestus Autonomous Remediation
+name: 🔥 Hefaetus Autonomous Remediation
 
 on:
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   remediate:
-    name: 🤖 Run Hefaestus Self-Healing Pipeline
+    name: 🤖 Run Hefaetus Self-Healing Pipeline
     runs-on: ubuntu-latest
 
     steps:
@@ -32,7 +32,7 @@ jobs:
           cd agent
           npm ci
 
-      - name: 🚀 Execute Hefaestus Autonomous Agent
+      - name: 🚀 Execute Hefaetus Autonomous Agent
         env:
           # Free Tier Google Gemini API Key configured in GitHub Repository Secrets
           LLM_PROVIDER: ${{ secrets.LLM_PROVIDER || 'gemini' }}

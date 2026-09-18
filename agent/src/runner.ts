@@ -37,7 +37,7 @@ export class SandboxRunner {
     this.sandboxContainerName =
       options.sandboxContainerName ||
       process.env.SANDBOX_CONTAINER_NAME ||
-      'hefaestus-sandbox';
+      'hefaetus-sandbox';
     this.timeoutMs = options.timeoutMs || 120000;
   }
 

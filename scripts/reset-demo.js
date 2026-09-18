@@ -62,5 +62,5 @@ try {
 }
 
 console.log(
-  '\n✅ Reset complete! mock-target-app is ready for live Hefaestus demonstration.\n'
+  '\n✅ Reset complete! mock-target-app is ready for live Hefaetus demonstration.\n'
 );

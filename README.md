@@ -1,4 +1,4 @@
-# 🔥 HEFAESTUS: Autonomous Dependency Remediation Agent
+# 🔥 HEFAETUS: Autonomous Dependency Remediation Agent
 > **A Self-Healing DevSecOps Pipeline for Breaking Dependency Bumps & Vulnerability Remediation**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
@@ -17,7 +17,7 @@ Traditional Software Composition Analysis (SCA) tools (like Dependabot, Renovate
 - Automated PRs stall or break CI pipelines.
 - Security and platform teams face remediation fatigue, delaying critical CVE fixes.
 
-**Hefaestus** bridges this gap. It is an **autonomous remediation agent** that not only upgrades the vulnerable dependency, but also captures the containerized test failure, invokes an LLM (**Google Gemini Free Tier**, **OpenAI GPT-4o**, or **Claude 3.5 Sonnet**) with call-site context, applies an automated AST/code patch, re-verifies in an isolated sandbox, commits the fix, and opens an audit-ready Pull Request.
+**Hefaetus** bridges this gap. It is an **autonomous remediation agent** that not only upgrades the vulnerable dependency, but also captures the containerized test failure, invokes an LLM (**Google Gemini Free Tier**, **OpenAI GPT-4o**, or **Claude 3.5 Sonnet**) with call-site context, applies an automated AST/code patch, re-verifies in an isolated sandbox, commits the fix, and opens an audit-ready Pull Request.
 
 ---
 
@@ -48,7 +48,7 @@ You can run live LLM remediations with **100% free API calls** using Google Gemi
 sequenceDiagram
     autonumber
     participant DevSecOps as 🧑‍💻 DevSecOps / CI Trigger
-    participant Agent as 🤖 Hefaestus Agent
+    participant Agent as 🤖 Hefaetus Agent
     participant Sandbox as 📦 Docker Sandbox Container
     participant LLM as 🧠 LLM (Gemini Free / GPT-4o / Claude)
     participant Git as 🐙 GitHub API / Git Repo
@@ -81,7 +81,7 @@ sequenceDiagram
 ## 📂 Project Structure
 
 ```text
-hephaestus-poc/
+hefaetus-poc/
 ├── docker-compose.yml       # Orchestrates agent and isolated test sandbox
 ├── .env.example             # Configuration template (Gemini, OpenAI, Anthropic, GitHub)
 ├── package.json             # Root workspace convenience commands
@@ -122,7 +122,7 @@ hephaestus-poc/
    cp ../.env.example ../.env
    ```
    Add your free `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/).
-   *(If no API key is provided, Hefaestus automatically uses its built-in Deterministic DevSecOps Engine so you can present offline!)*
+   *(If no API key is provided, Hefaetus automatically uses its built-in Deterministic DevSecOps Engine so you can present offline!)*
 
 3. **Run the Agent:**
    ```bash
@@ -161,7 +161,7 @@ npm run demo:reset
 ## 🛡️ Enterprise Platform & DevSecOps Best Practices
 
 1. **Container Isolation (Least Privilege Execution):**
-   - Untrusted repository code and test suites are executed within the unprivileged `sandbox` container (`hefaestus-sandbox`).
+   - Untrusted repository code and test suites are executed within the unprivileged `sandbox` container (`hefaetus-sandbox`).
    - Host filesystem and agent credentials remain shielded from malicious build scripts or exploit payloads.
 
 2. **Free & Accessible Frontier LLMs:**

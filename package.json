@@ -1,7 +1,7 @@
 {
-  "name": "hefaestus-poc-root",
+  "name": "hefaetus-poc-root",
   "version": "1.0.0",
-  "description": "Hefaestus - Autonomous Dependency Remediation Agent PoC",
+  "description": "Hefaetus - Autonomous Dependency Remediation Agent PoC",
   "scripts": {
     "start": "npm --prefix agent start",
     "build": "npm --prefix agent run build",

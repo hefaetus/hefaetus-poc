@@ -76,7 +76,7 @@ export class RemediationLLMClient {
     } else {
       // Offline / Demo Fallback Mode
       this.provider = 'mock';
-      this.model = 'hefaestus-deterministic-engine';
+      this.model = 'hefaetus-deterministic-engine';
     }
   }
 
@@ -129,7 +129,7 @@ module.exports = { generateId };
   public async generatePatch(
     input: RemediationInput
   ): Promise<RemediationOutput> {
-    const systemPrompt = `You are Hefaestus, an expert DevSecOps and Platform Engineering Autonomous Remediation Agent.
+    const systemPrompt = `You are Hefaetus, an expert DevSecOps and Platform Engineering Autonomous Remediation Agent.
 Your role is to fix breaking changes introduced when upgrading Node.js dependencies to address security vulnerabilities.
 
 CRITICAL INSTRUCTIONS:
@@ -202,7 +202,7 @@ Please analyze the failure and generate the patched file content.`;
       } catch (err: any) {
         console.warn(
           chalk.yellow(
-            `\n⚠️  [LLM Warning] Google Gemini API request failed (${err.message}). Falling back to Hefaestus deterministic engine for live demonstration.`
+            `\n⚠️  [LLM Warning] Google Gemini API request failed (${err.message}). Falling back to Hefaetus deterministic engine for live demonstration.`
           )
         );
         return this.getDeterministicPatch(input);
@@ -247,7 +247,7 @@ Please analyze the failure and generate the patched file content.`;
       } catch (err: any) {
         console.warn(
           chalk.yellow(
-            `\n⚠️  [LLM Warning] OpenAI API request failed (${err.message}). Falling back to Hefaestus deterministic engine for live demonstration.`
+            `\n⚠️  [LLM Warning] OpenAI API request failed (${err.message}). Falling back to Hefaetus deterministic engine for live demonstration.`
           )
         );
         return this.getDeterministicPatch(input);
@@ -295,7 +295,7 @@ Please analyze the failure and generate the patched file content.`;
       } catch (err: any) {
         console.warn(
           chalk.yellow(
-            `\n⚠️  [LLM Warning] Anthropic API request failed (${err.message}). Falling back to Hefaestus deterministic engine for live demonstration.`
+            `\n⚠️  [LLM Warning] Anthropic API request failed (${err.message}). Falling back to Hefaetus deterministic engine for live demonstration.`
           )
         );
         return this.getDeterministicPatch(input);
