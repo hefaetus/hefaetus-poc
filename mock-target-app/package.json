@@ -1,12 +1,14 @@
 {
   "name": "mock-target-app",
   "version": "1.0.0",
-  "description": "Vulnerable demo service using deprecated uuid/v4 API",
+  "description": "Vulnerable demo service using deprecated uuid, glob, and rimraf APIs",
   "main": "src/idGenerator.js",
   "scripts": {
-    "test": "node test/idGenerator.test.js"
+    "test": "node test/run-all.js"
   },
   "dependencies": {
+    "glob": "7.2.3",
+    "rimraf": "3.0.2",
     "uuid": "3.4.0"
   }
 }

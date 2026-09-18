@@ -47,7 +47,7 @@ export class RemediationLLMClient {
     if ((forcedProvider === 'gemini' || forcedProvider === 'google') && hasGemini) {
       this.provider = 'gemini';
       this.geminiClient = new GoogleGenAI({ apiKey: geminiKey });
-      this.model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      this.model = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
     } else if (forcedProvider === 'openai' && hasOpenAI) {
       this.provider = 'openai';
       this.openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -62,7 +62,7 @@ export class RemediationLLMClient {
       // Free Tier Default if Gemini API key is provided
       this.provider = 'gemini';
       this.geminiClient = new GoogleGenAI({ apiKey: geminiKey });
-      this.model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      this.model = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
     } else if (hasOpenAI) {
       this.provider = 'openai';
       this.openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -104,6 +104,44 @@ export class RemediationLLMClient {
    * Returns deterministic fallback remediation for offline / demo mode.
    */
   private getDeterministicPatch(input: RemediationInput): RemediationOutput {
+    if (input.packageName === 'glob' || input.filePath.includes('fileFinder')) {
+      const globPatched = `const { globSync } = require('glob');
+
+function findFiles(pattern) {
+  return globSync(pattern);
+}
+
+module.exports = { findFiles };
+`;
+      return {
+        patchedCode: globPatched,
+        explanation:
+          "Updated legacy 'glob.sync()' to modern named export 'globSync()' from 'glob' v10.",
+        breakingChangeAnalysis:
+          "In glob v10+, the default export was restructured. 'glob.sync()' is deprecated/removed in favor of the named export 'globSync' or class-based Glob instances.",
+        rawResponse: 'DETERMINISTIC_ENGINE_OUTPUT',
+      };
+    }
+
+    if (input.packageName === 'rimraf' || input.filePath.includes('fileCleaner')) {
+      const rimrafPatched = `const { rimrafSync } = require('rimraf');
+
+function deletePath(targetPath) {
+  return rimrafSync(targetPath);
+}
+
+module.exports = { deletePath };
+`;
+      return {
+        patchedCode: rimrafPatched,
+        explanation:
+          "Updated legacy 'rimraf.sync()' to modern named export 'rimrafSync()' from 'rimraf' v5.",
+        breakingChangeAnalysis:
+          "In rimraf v4/v5+, the legacy default function signature 'rimraf.sync()' was replaced with named exports 'rimrafSync' or promise-based 'rimraf'.",
+        rawResponse: 'DETERMINISTIC_ENGINE_OUTPUT',
+      };
+    }
+
     const mockPatched = `const { v4: uuidv4 } = require('uuid');
 
 function generateId() {
@@ -168,9 +206,10 @@ Please analyze the failure and generate the patched file content.`;
     if (this.provider === 'gemini' && this.geminiClient) {
       const candidateModels = [
         this.model,
-        'gemini-2.5-flash',
-        'gemini-1.5-flash',
         'gemini-3.6-flash',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
       ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
       for (const modelName of candidateModels) {

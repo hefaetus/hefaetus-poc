@@ -4,18 +4,20 @@ const { execSync } = require('child_process');
 
 const TARGET_DIR = path.resolve(__dirname, '../mock-target-app');
 
-console.log('🔄 Resetting mock-target-app to vulnerable baseline (uuid@3.4.0)...');
+console.log('🔄 Resetting mock-target-app to vulnerable baseline (uuid@3.4.0, glob@7.2.3, rimraf@3.0.2)...');
 
 // 1. Reset package.json
 const pkgJson = {
   name: 'mock-target-app',
   version: '1.0.0',
-  description: 'Vulnerable demo service using deprecated uuid/v4 API',
+  description: 'Vulnerable demo service using deprecated uuid, glob, and rimraf APIs',
   main: 'src/idGenerator.js',
   scripts: {
-    test: 'node test/idGenerator.test.js',
+    test: 'node test/run-all.js',
   },
   dependencies: {
+    glob: '7.2.3',
+    rimraf: '3.0.2',
     uuid: '3.4.0',
   },
 };
@@ -26,7 +28,7 @@ fs.writeFileSync(
 );
 
 // 2. Reset idGenerator.js
-const vulnerableCode = `const uuid = require('uuid/v4');
+const idGenCode = `const uuid = require('uuid/v4');
 
 function generateId() {
   return uuid();
@@ -37,24 +39,59 @@ module.exports = { generateId };
 
 fs.writeFileSync(
   path.join(TARGET_DIR, 'src', 'idGenerator.js'),
-  vulnerableCode,
+  idGenCode,
   'utf8'
 );
 
-// 3. Reset Git repo to main branch
-try {
-  execSync('git checkout -f main', { cwd: TARGET_DIR, stdio: 'ignore' });
-  execSync('git clean -fd', { cwd: TARGET_DIR, stdio: 'ignore' });
-  execSync('git branch -D fix/remediate-uuid-breaking-change', {
-    cwd: TARGET_DIR,
-    stdio: 'ignore',
-  });
-} catch {
-  // Ignore git errors if branch does not exist or repo is newly created
+// 3. Reset fileFinder.js
+const fileFinderCode = `const glob = require('glob');
+
+function findFiles(pattern) {
+  return glob.sync(pattern);
 }
 
-// 4. Re-install uuid@3.4.0
-console.log('📦 Re-installing uuid@3.4.0 dependencies...');
+module.exports = { findFiles };
+`;
+
+fs.writeFileSync(
+  path.join(TARGET_DIR, 'src', 'fileFinder.js'),
+  fileFinderCode,
+  'utf8'
+);
+
+// 4. Reset fileCleaner.js
+const fileCleanerCode = `const rimraf = require('rimraf');
+
+function deletePath(targetPath) {
+  return rimraf.sync(targetPath);
+}
+
+module.exports = { deletePath };
+`;
+
+fs.writeFileSync(
+  path.join(TARGET_DIR, 'src', 'fileCleaner.js'),
+  fileCleanerCode,
+  'utf8'
+);
+
+// 5. Safely delete remediation branches if they exist (without touching working tree files)
+try {
+  execSync('git branch -D fix/remediate-uuid-breaking-change', {
+    cwd: path.resolve(__dirname, '..'),
+    stdio: 'ignore',
+  });
+} catch {}
+
+try {
+  execSync('git branch -D fix/hefaetus-autonomous-dependency-remediation', {
+    cwd: path.resolve(__dirname, '..'),
+    stdio: 'ignore',
+  });
+} catch {}
+
+// 6. Re-install vulnerable baseline dependencies in mock-target-app
+console.log('📦 Installing vulnerable dependencies in mock-target-app...');
 try {
   execSync('npm install', { cwd: TARGET_DIR, stdio: 'inherit' });
 } catch (e) {

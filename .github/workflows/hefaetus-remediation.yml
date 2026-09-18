@@ -43,8 +43,8 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-          # Built-in GitHub Actions Token for pushing branch and opening PR
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GitHub Token for pushing branch and opening PR (accepts GH_PAT or default GITHUB_TOKEN)
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
           EXECUTION_MODE: local

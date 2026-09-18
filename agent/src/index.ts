@@ -4,9 +4,9 @@ import dotenv from 'dotenv';
 import chalk from 'chalk';
 import { SandboxRunner } from './runner';
 import { RemediationLLMClient } from './llm';
-import { GitManager } from './git';
+import { GitManager, PackageBumpInfo } from './git';
 
-// Load environment variables from .env in hephaestus-poc or current directory
+// Load environment variables from .env in hefaetus-poc or current directory
 const candidateEnvPaths = [
   path.resolve(__dirname, '../../.env'),
   path.resolve(process.cwd(), '.env'),
@@ -34,11 +34,32 @@ const resolveTargetDir = (): string => {
 };
 
 const TARGET_APP_DIR = resolveTargetDir();
-const TARGET_PACKAGE_NAME = 'uuid';
-const TARGET_SECURE_VERSION = '^9.0.0';
-const TARGET_FILE_REL = path.join('src', 'idGenerator.js');
-const BRANCH_NAME = 'fix/remediate-uuid-breaking-change';
-const MAX_HEALING_ATTEMPTS = 3;
+const BRANCH_NAME = 'fix/hefaetus-autonomous-dependency-remediation';
+const MAX_HEALING_ATTEMPTS = 6;
+
+interface TargetPackageDef {
+  name: string;
+  targetVersion: string;
+  sourceFile: string;
+}
+
+const TARGET_PACKAGES: TargetPackageDef[] = [
+  {
+    name: 'uuid',
+    targetVersion: '^9.0.0',
+    sourceFile: path.join('src', 'idGenerator.js'),
+  },
+  {
+    name: 'glob',
+    targetVersion: '^10.3.10',
+    sourceFile: path.join('src', 'fileFinder.js'),
+  },
+  {
+    name: 'rimraf',
+    targetVersion: '^5.0.5',
+    sourceFile: path.join('src', 'fileCleaner.js'),
+  },
+];
 
 function printBanner() {
   console.log(
@@ -83,11 +104,11 @@ async function main() {
   console.log(`✔ Switched to clean remediation branch: ${chalk.blue(BRANCH_NAME)}\n`);
 
   // -------------------------------------------------------------
-  // STEP 1: Scan & Detect Vulnerable Dependency
+  // STEP 1: Scan & Detect Vulnerable Dependencies
   // -------------------------------------------------------------
   console.log(
     chalk.bgBlue.white.bold(
-      ' [STEP 1/5] SCANNING & BUMPING VULNERABLE DEPENDENCY '
+      ' [STEP 1/5] SCANNING & BUMPING VULNERABLE DEPENDENCIES '
     )
   );
   const pkgJsonPath = path.join(TARGET_APP_DIR, 'package.json');
@@ -99,24 +120,27 @@ async function main() {
   }
 
   const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
-  const currentVersion = pkgJson.dependencies?.[TARGET_PACKAGE_NAME] || 'unknown';
+  pkgJson.dependencies = pkgJson.dependencies || {};
 
-  console.log(
-    `🔍 Identified dependency: ${chalk.bold(
-      TARGET_PACKAGE_NAME
-    )} at version ${chalk.red(currentVersion)}`
-  );
-  console.log(
-    `⚠️  Advisory: Vulnerability / Deprecation detected in ${TARGET_PACKAGE_NAME}@${currentVersion}.`
-  );
-  console.log(
-    `🚀 Upgrading ${TARGET_PACKAGE_NAME} to secure target: ${chalk.green(
-      TARGET_SECURE_VERSION
-    )} (Introducing deliberate BREAKING CHANGE)`
-  );
+  const packageBumps: PackageBumpInfo[] = [];
+
+  console.log(chalk.bold('🔍 Scanning target manifest for deprecated/vulnerable packages...'));
+  for (const targetPkg of TARGET_PACKAGES) {
+    const currentVersion = pkgJson.dependencies[targetPkg.name] || 'unknown';
+    packageBumps.push({
+      name: targetPkg.name,
+      oldVersion: currentVersion,
+      newVersion: targetPkg.targetVersion,
+    });
+    console.log(
+      `   • ${chalk.bold(targetPkg.name)}: ${chalk.red(currentVersion)} ➔ ${chalk.green(
+        targetPkg.targetVersion
+      )} (introducing deliberate breaking change)`
+    );
+    pkgJson.dependencies[targetPkg.name] = targetPkg.targetVersion;
+  }
 
   // Update package.json
-  pkgJson.dependencies[TARGET_PACKAGE_NAME] = TARGET_SECURE_VERSION;
   fs.writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n');
   console.log(chalk.green('✔ Updated package.json. Triggering npm install...'));
 
@@ -138,11 +162,11 @@ async function main() {
   // -------------------------------------------------------------
   console.log(
     chalk.bgRed.white.bold(
-      ' [STEP 2/5] RUNNING SANDBOX TESTS (DETECTING BREAKING CHANGE) '
+      ' [STEP 2/5] RUNNING SANDBOX TESTS (DETECTING BREAKING CHANGES) '
     )
   );
   console.log(
-    `Executing 'npm test' in isolated environment to capture breaking change...`
+    `Executing 'npm test' in isolated environment to capture breaking changes...`
   );
 
   let testResult = await runner.runNpmTest(TARGET_APP_DIR);
@@ -169,7 +193,7 @@ async function main() {
   }
 
   // -------------------------------------------------------------
-  // STEP 3 & 4: Autonomous Healing Loop (LLM Refactor -> Verify)
+  // STEP 3: Autonomous Healing Loop (LLM Refactor -> Verify)
   // -------------------------------------------------------------
   console.log(
     chalk.bgMagenta.white.bold(
@@ -177,35 +201,59 @@ async function main() {
     )
   );
 
-  const targetFilePath = path.join(TARGET_APP_DIR, TARGET_FILE_REL);
-  let healingSuccess = false;
-  let lastExplanation = '';
-  let lastAnalysis = '';
+  let healingSuccess = testResult.success;
+  const analyses: string[] = [];
+  const explanations: string[] = [];
+  const healedFiles = new Set<string>();
   let attempt = 1;
 
   while (attempt <= MAX_HEALING_ATTEMPTS && !healingSuccess) {
     console.log(
       chalk.cyan.bold(
-        `\n🔄 Loop Iteration ${attempt} of ${MAX_HEALING_ATTEMPTS}: Requesting LLM Patch...`
+        `\n🔄 Loop Iteration ${attempt} of ${MAX_HEALING_ATTEMPTS}: Inspecting Failure & Requesting LLM Patch...`
       )
     );
 
+    const combinedOutput = `${testResult.stderr}\n${testResult.stdout}`;
+
+    // Identify which package / source file caused the failure
+    let failingTarget = TARGET_PACKAGES.find((pkg) => {
+      const baseName = path.basename(pkg.sourceFile);
+      return combinedOutput.includes(baseName) || combinedOutput.includes(pkg.name);
+    });
+
+    // Fallback: pick the first unhealed file
+    if (!failingTarget) {
+      failingTarget = TARGET_PACKAGES.find((pkg) => !healedFiles.has(pkg.sourceFile)) || TARGET_PACKAGES[0];
+    }
+
+    const currentBump = packageBumps.find((p) => p.name === failingTarget!.name);
+    const targetFilePath = path.join(TARGET_APP_DIR, failingTarget.sourceFile);
     const currentFileContent = fs.readFileSync(targetFilePath, 'utf8');
 
+    console.log(
+      chalk.yellow(
+        `🎯 Target identified: Package "${chalk.bold(failingTarget.name)}" -> File "${chalk.bold(
+          failingTarget.sourceFile
+        )}"`
+      )
+    );
+
     const remediation = await llm.generatePatch({
-      packageName: TARGET_PACKAGE_NAME,
-      oldVersion: currentVersion,
-      newVersion: TARGET_SECURE_VERSION,
-      filePath: TARGET_FILE_REL,
+      packageName: failingTarget.name,
+      oldVersion: currentBump?.oldVersion || 'unknown',
+      newVersion: failingTarget.targetVersion,
+      filePath: failingTarget.sourceFile,
       fileContent: currentFileContent,
-      errorStackTrace: testResult.stderr,
+      errorStackTrace: testResult.stderr || testResult.stdout,
       testOutput: testResult.stdout,
       attempt,
       maxAttempts: MAX_HEALING_ATTEMPTS,
     });
 
-    lastExplanation = remediation.explanation;
-    lastAnalysis = remediation.breakingChangeAnalysis;
+    analyses.push(`- **\`${failingTarget.name}\`**: ${remediation.breakingChangeAnalysis}`);
+    explanations.push(`- **\`${failingTarget.sourceFile}\`**: ${remediation.explanation}`);
+    healedFiles.add(failingTarget.sourceFile);
 
     console.log(chalk.bold('🤖 LLM Root Cause Analysis:'));
     console.log(`   ${chalk.italic(remediation.breakingChangeAnalysis)}`);
@@ -213,7 +261,7 @@ async function main() {
     console.log(`   ${chalk.italic(remediation.explanation)}`);
 
     console.log(
-      chalk.yellow(`📝 Applying generated patch to ${TARGET_FILE_REL}...`)
+      chalk.yellow(`📝 Applying generated patch to ${failingTarget.sourceFile}...`)
     );
     fs.writeFileSync(targetFilePath, remediation.patchedCode + '\n', 'utf8');
 
@@ -226,7 +274,7 @@ async function main() {
       healingSuccess = true;
       console.log(
         chalk.green.bold(
-          `\n✅ TEST PASSED ON ATTEMPT ${attempt}! Autonomous self-healing verified.`
+          `\n✅ ALL TESTS PASSED ON ATTEMPT ${attempt}! Autonomous self-healing verified across upgraded packages.`
         )
       );
       console.log(chalk.gray(testResult.stdout.trim()));
@@ -234,7 +282,7 @@ async function main() {
     } else {
       console.log(
         chalk.red(
-          `✖ Test still failing on attempt ${attempt}. Error stack trace captured for next loop.`
+          `✖ Test suite still has failing tests on attempt ${attempt}. Capturing next error trace...`
         )
       );
       attempt++;
@@ -254,7 +302,7 @@ async function main() {
   }
 
   // -------------------------------------------------------------
-  // STEP 5: Git Commit & Open Pull Request
+  // STEP 4: Git Commit & Open Pull Request
   // -------------------------------------------------------------
   console.log(
     chalk.bgGreen.black.bold(
@@ -262,39 +310,46 @@ async function main() {
     )
   );
 
-  const commitMsg = `fix(deps): bump ${TARGET_PACKAGE_NAME} to ${TARGET_SECURE_VERSION} and adapt call sites`;
-  await git.commitChanges(commitMsg, [
+  const commitMsg = `fix(deps): bump dependencies and remediate breaking changes [${TARGET_PACKAGES.map(
+    (p) => p.name
+  ).join(', ')}]`;
+  const filesToCommit = [
     'package.json',
     'package-lock.json',
-    TARGET_FILE_REL,
-  ]);
-  console.log(`✔ Committed remediated files to ${chalk.blue(BRANCH_NAME)}: "${commitMsg}"`);
+    ...TARGET_PACKAGES.map((p) => p.sourceFile),
+  ];
+
+  await git.commitChanges(commitMsg, filesToCommit);
+  console.log(
+    `✔ Committed remediated files to ${chalk.blue(BRANCH_NAME)}: "${commitMsg}"`
+  );
 
   console.log(`Opening Pull Request with comprehensive DevSecOps report...`);
   const prResult = await git.createOrSimulatePR({
-    packageName: TARGET_PACKAGE_NAME,
-    oldVersion: currentVersion,
-    newVersion: TARGET_SECURE_VERSION,
+    packages: packageBumps,
     branchName: BRANCH_NAME,
-    breakingChangeAnalysis: lastAnalysis,
-    explanation: lastExplanation,
+    breakingChangeAnalysis: analyses.join('\n\n'),
+    explanation: explanations.join('\n\n'),
     testEvidence: testResult.stdout || '✔ All tests passed',
-    remediatedFiles: [TARGET_FILE_REL, 'package.json'],
+    remediatedFiles: Array.from(healedFiles),
   });
 
   // -------------------------------------------------------------
-  // FINAL SUMMARY
+  // STEP 5: Remediation Pipeline Complete Summary
   // -------------------------------------------------------------
   console.log(
     chalk.bgCyan.black.bold('\n [STEP 5/5] REMEDIATION PIPELINE COMPLETE ')
   );
   console.log(chalk.bold('\n📊 Audit Report:'));
   console.log(`   • Target Repository    : ${chalk.yellow(TARGET_APP_DIR)}`);
-  console.log(
-    `   • Dependency Upgrade   : ${chalk.red(
-      TARGET_PACKAGE_NAME + '@' + currentVersion
-    )} ➔ ${chalk.green(TARGET_PACKAGE_NAME + '@' + TARGET_SECURE_VERSION)}`
-  );
+  console.log(`   • Dependencies Remediated:`);
+  for (const b of packageBumps) {
+    console.log(
+      `     - ${chalk.bold(b.name)}: ${chalk.red(b.oldVersion)} ➔ ${chalk.green(
+        b.newVersion
+      )}`
+    );
+  }
   console.log(
     `   • Healing Loops Taken  : ${chalk.green(
       `${attempt} / ${MAX_HEALING_ATTEMPTS}`
@@ -306,29 +361,31 @@ async function main() {
     `   • Pull Request URL     : ${chalk.bold.green(prResult.pullRequestUrl)}`
   );
 
-  console.log(chalk.bold('\n📄 Remediated Code in ' + TARGET_FILE_REL + ':'));
-  console.log(
-    chalk.gray(
-      '-------------------------------------------------------------------'
-    )
-  );
-  console.log(chalk.white(fs.readFileSync(targetFilePath, 'utf8').trim()));
-  console.log(
-    chalk.gray(
-      '-------------------------------------------------------------------\n'
-    )
-  );
+  console.log(chalk.bold('\n📄 Remediated Source Files:'));
+  for (const relFile of TARGET_PACKAGES.map((p) => p.sourceFile)) {
+    const fullPath = path.join(TARGET_APP_DIR, relFile);
+    console.log(chalk.cyan(`\n--- ${relFile} ---`));
+    console.log(chalk.white(fs.readFileSync(fullPath, 'utf8').trim()));
+  }
 
   if (prResult.diffSummary) {
-    console.log(chalk.bold('🔍 Git Diff (against main):'));
-    console.log(chalk.gray('-------------------------------------------------------------------'));
+    console.log(chalk.bold('\n🔍 Git Diff (against main):'));
+    console.log(
+      chalk.gray(
+        '-------------------------------------------------------------------'
+      )
+    );
     console.log(chalk.yellow(prResult.diffSummary.trim()));
-    console.log(chalk.gray('-------------------------------------------------------------------\n'));
+    console.log(
+      chalk.gray(
+        '-------------------------------------------------------------------\n'
+      )
+    );
   }
 
   console.log(
     chalk.green.bold(
-      '✨ Hefaetus successfully resolved breaking dependency upgrade autonomously!'
+      '✨ Hefaetus successfully resolved all breaking dependency upgrades autonomously!'
     )
   );
 }
