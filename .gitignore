@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+agent/node_modules/
+mock-target-app/node_modules/
+
+# Build artifacts
+dist/
+agent/dist/
+
+# Environment credentials
+.env
+
+# Mock target internal git repo
+mock-target-app/.git/
+
+# Logs & OS artifacts
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

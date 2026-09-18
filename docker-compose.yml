@@ -1,0 +1,45 @@
+services:
+  # Isolated Node.js Sandbox Container for executing untrusted/tested code
+  sandbox:
+    container_name: hefaestus-sandbox
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes:
+      - ./mock-target-app:/workspace
+    command: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
+    networks:
+      - hefaestus-net
+
+  # Orchestrator Agent Container
+  agent:
+    container_name: hefaestus-agent
+    build:
+      context: .
+      dockerfile: agent/Dockerfile
+    environment:
+      - NODE_ENV=development
+      - EXECUTION_MODE=docker
+      - SANDBOX_CONTAINER_NAME=hefaestus-sandbox
+      - MOCK_TARGET_DIR=/workspace/mock-target-app
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REPO_OWNER=${REPO_OWNER}
+      - REPO_NAME=${REPO_NAME}
+    volumes:
+      - ./mock-target-app:/workspace/mock-target-app
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - sandbox
+    networks:
+      - hefaestus-net
+
+networks:
+  hefaestus-net:
+    driver: bridge

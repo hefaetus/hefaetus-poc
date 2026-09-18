@@ -1,0 +1,11 @@
+{
+  "name": "hefaestus-poc-root",
+  "version": "1.0.0",
+  "description": "Hefaestus - Autonomous Dependency Remediation Agent PoC",
+  "scripts": {
+    "start": "npm --prefix agent start",
+    "build": "npm --prefix agent run build",
+    "demo:reset": "node scripts/reset-demo.js",
+    "test:target": "npm --prefix mock-target-app test"
+  }
+}

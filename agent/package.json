@@ -1,0 +1,25 @@
+{
+  "name": "hefaestus-agent",
+  "version": "1.0.0",
+  "description": "Autonomous Dependency Remediation Agent",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@google/genai": "^2.23.0",
+    "@octokit/rest": "^21.1.1",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.4.7",
+    "openai": "^4.86.0",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "mock-target-app",
+  "version": "1.0.0",
+  "description": "Vulnerable demo service using deprecated uuid/v4 API",
+  "main": "src/idGenerator.js",
+  "scripts": {
+    "test": "node test/idGenerator.test.js"
+  },
+  "dependencies": {
+    "uuid": "3.4.0"
+  }
+}
