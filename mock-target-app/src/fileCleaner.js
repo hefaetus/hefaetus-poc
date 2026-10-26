@@ -1,12 +1,7 @@
-const rimraf = require('rimraf');
+const { rimraf } = require('rimraf');
 
 function deletePath(targetPath) {
-  return new Promise((resolve, reject) => {
-    rimraf(targetPath, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
+  return rimraf(targetPath);
 }
 
 module.exports = { deletePath };
